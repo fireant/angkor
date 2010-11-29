@@ -22,12 +22,8 @@
 #include <osg/GL>
 #include <osgViewer/Viewer>
 #include <osg/MatrixTransform>
-#include <osg/Billboard>
 #include <osg/Geode>
 #include <osg/Group>
-#include <osg/ShapeDrawable>
-#include <osg/PointSprite>
-#include <osg/Texture2D>
 #include <osgGA/TrackballManipulator>
 #include <osgSim/LightPointNode>
 #include <pthread.h>
@@ -52,25 +48,19 @@ int frame = 0;
 using namespace std;
 using namespace osgSim;
 
-void addToLightPointNode ( LightPointNode& lpn, LightPoint& start,
-						   unsigned int noSteps, unsigned int j )
+void addToLightPointNode ( LightPointNode& lpn, unsigned int noSteps,
+						   unsigned int j )
 {
-        if ( noSteps<=1 ) {
-                lpn.addLightPoint ( start );
-                return;
-        }
-
-        float rend = 0.0f;
-        float rdelta = 1.0f/ ( ( float ) noSteps-1.0f );
-
         lpn.getLightPointList().reserve ( noSteps );
 
-        for ( unsigned int i=0;i<noSteps;++i,rend+=rdelta ) {
-                float rstart = 1.0f-rend;
-                LightPoint lp ( start );
+        for ( unsigned int i=0;i<noSteps;++i) {
+                LightPoint lp;
+				lp._color.set ( 1.0f,1.0f,1.0f,1.0f );
                 lp._position.z() = depth_data[j][i] * 10.0;
-                lp._position.y() = j * ( lp._position.z() + -10.0 ) * 0.005;
-                lp._position.x() = i * ( lp._position.z() + -10.0 ) * 0.005;
+                lp._position.y() = (j-120.0) * ( lp._position.z() + -10.0 )
+										* 0.005;
+                lp._position.x() = (i-160.0) * ( lp._position.z() + -10.0 )
+										* 0.005;
 
                 if ( depth_data[j][i]> ( 100.0/3.33 ) )
                         lpn.addLightPoint ( lp );
@@ -79,17 +69,10 @@ void addToLightPointNode ( LightPointNode& lpn, LightPoint& start,
 
 osg::Node* createLightPointsDatabase()
 {
-        LightPoint start;
-
-        start._position.set ( -320.0f,-500.0f,0.0f );
-        start._color.set ( 1.0f,1.0f,1.0f,1.0f );
-
         osg::MatrixTransform* transform = new osg::MatrixTransform;
 
         transform->setDataVariance ( osg::Object::STATIC );
-        transform->setMatrix ( osg::Matrix::scale ( 0.1,0.1,0.1 ) );
-
-        osg::Vec3 start_delta ( 0.0f,2.0f,0.0f );
+        transform->setMatrix ( osg::Matrix::scale ( 0.0002,0.0002,0.0002 ) );
 
         int noStepsX = 320;
         int noStepsY = 240;
@@ -99,9 +82,7 @@ osg::Node* createLightPointsDatabase()
 
                 LightPointNode* lpn = new LightPointNode;
 
-                addToLightPointNode ( *lpn,start,noStepsX, i );
-
-                start._position += start_delta;
+                addToLightPointNode ( *lpn, noStepsX, i );
 
                 transform->addChild ( lpn );
         }
@@ -119,9 +100,9 @@ void depth_cb ( freenect_device *dev, void *v_depth, uint32_t timestamp )
         pthread_mutex_lock ( &backbuf_mutex );
         for ( int i=0; i<240; i++ ) {
                 for ( int j=0; j<320; j++ ) {
-                        double pval = 100/ ( -0.00307 * depth[ ( ( i*2 ) *640 )
-								+ ( j*2 ) ] + 3.33 );
-                        depth_data[i][j] = pval;
+                        double metric = 100.0 / ( -0.00307 * 
+								depth[ ( ( i*2 ) * 640)	+ ( j*2 ) ] + 3.33 );
+                        depth_data[i][j] = metric;
                 }
         }
         pthread_mutex_unlock ( &backbuf_mutex );
@@ -177,9 +158,13 @@ int main ( int argc, char **argv )
 
         osgViewer::Viewer viewer;
         viewer.setCameraManipulator ( new osgGA::TrackballManipulator() );
+		osg::Vec3d eye(0.0,0.0,-1.0);
+		osg::Vec3d center(0.0,0.0,0.0);
+		osg::Vec3d up(0.0,-1.0,0.0);
+		viewer.getCameraManipulator()->setHomePosition(eye, center, up);
         viewer.setUpViewInWindow ( 640, 0, 640, 480 );
         viewer.realize();
-
+	
         osg::Group* rootnode = new osg::Group;
 
         osg::Node* lps;
@@ -192,8 +177,6 @@ int main ( int argc, char **argv )
                 lps = createLightPointsDatabase();
                 rootnode->addChild ( lps );
                 viewer.setSceneData ( rootnode );
-                if ( frame == 1 )
-                        viewer.assignSceneDataToCameras();
                 viewer.frame();
         }
         die = 1;
