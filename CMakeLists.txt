@@ -1,7 +1,7 @@
-PROJECT(osg_kinect)
+PROJECT(angkor)
 
 set(CMAKE_BUILD_TYPE Release)
 
-ADD_EXECUTABLE(osg_kinect main.cpp)
+ADD_EXECUTABLE(angkor basiceventhandler.cpp main.cpp)
 
-target_link_libraries(osg_kinect freenect OpenThreads osg osgSim osgViewer)
+target_link_libraries(angkor freenect OpenThreads osg osgSim osgViewer)

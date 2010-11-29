@@ -29,9 +29,13 @@
 #include <pthread.h>
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <cmath>
 
 #include <libfreenect/libfreenect.h>
+
+#include "basiceventhandler.h"
 
 volatile int die = 0;
 pthread_t freenect_thread;
@@ -49,7 +53,7 @@ using namespace std;
 using namespace osgSim;
 
 void addToLightPointNode ( LightPointNode& lpn, unsigned int noSteps,
-						   unsigned int j )
+						   unsigned int j, bool bexport , ostringstream& sstream )
 {
         lpn.getLightPointList().reserve ( noSteps );
 
@@ -62,12 +66,20 @@ void addToLightPointNode ( LightPointNode& lpn, unsigned int noSteps,
                 lp._position.x() = (i-160.0) * ( lp._position.z() + -10.0 )
 										* 0.005;
 
-                if ( depth_data[j][i]> ( 100.0/3.33 ) )
-                        lpn.addLightPoint ( lp );
+                if ( depth_data[j][i] <= ( 100.0/3.33 ) )
+						continue;
+				
+				lpn.addLightPoint ( lp );
+				
+				if (bexport) {
+						sstream<<(int)lp._position.x()<<" "
+							<<(int)lp._position.y()<<" "
+							<<(int)lp._position.z()<<endl;
+				}
         }
 }
 
-osg::Node* createLightPointsDatabase()
+osg::Node* createLightPointsDatabase(ExportState* export_state)
 {
         osg::MatrixTransform* transform = new osg::MatrixTransform;
 
@@ -77,12 +89,28 @@ osg::Node* createLightPointsDatabase()
         int noStepsX = 320;
         int noStepsY = 240;
 
+		ofstream file;
+		if (export_state->state) {
+				file.open("kinect.ply");
+				file<<"ply"<<endl;
+				file<<"format ascii 1.0"<<endl;
+				file<<"comment created by Angkor"<<endl;
+				file<<"comment (yet another Kinect point cloud viewer)"<<endl;
+				file<<"element vertex ";
+		}
+		
         pthread_mutex_lock ( &backbuf_mutex );
+
+		ostringstream ss;
+		size_t totall_points = 0;
         for ( int i=0;i<noStepsY;++i ) {
 
                 LightPointNode* lpn = new LightPointNode;
 
-                addToLightPointNode ( *lpn, noStepsX, i );
+                addToLightPointNode ( *lpn, noStepsX, i, export_state->state,
+										ss);
+				
+				totall_points += lpn->getNumLightPoints();
 
                 transform->addChild ( lpn );
         }
@@ -90,6 +118,18 @@ osg::Node* createLightPointsDatabase()
 
         osg::Group* group = new osg::Group;
         group->addChild ( transform );
+		
+		if (export_state->state) {
+				file<<totall_points<<endl;
+				file<<"property float x"<<endl;
+				file<<"property float y"<<endl;
+				file<<"property float z"<<endl;
+				file<<"end_header"<<endl;
+				file<<ss.str();
+				export_state->state = false;
+				file.close();
+		}
+
 
         return group;
 }
@@ -153,6 +193,8 @@ int main ( int argc, char **argv )
                 cout<<"Could not open device\n";
                 return 1;
         }
+        
+        cout<<">> Hit s to save the point cloud in kinect.ply <<"<<endl;
 
         pthread_create ( &freenect_thread, NULL, freenect_threadfunc, NULL );
 
@@ -163,18 +205,21 @@ int main ( int argc, char **argv )
 		osg::Vec3d up(0.0,-1.0,0.0);
 		viewer.getCameraManipulator()->setHomePosition(eye, center, up);
         viewer.setUpViewInWindow ( 640, 0, 640, 480 );
+		ExportState export_state;
+		BasicEventHandler* e_handler = new BasicEventHandler(&export_state);
+		viewer.addEventHandler(e_handler);
         viewer.realize();
 	
         osg::Group* rootnode = new osg::Group;
 
         osg::Node* lps;
-        lps = createLightPointsDatabase();
+        lps = createLightPointsDatabase(&export_state);
         rootnode->addChild ( lps );
         viewer.setSceneData ( rootnode );
 
         while ( !viewer.done() ) {
                 rootnode->removeChild ( lps );
-                lps = createLightPointsDatabase();
+                lps = createLightPointsDatabase(&export_state);
                 rootnode->addChild ( lps );
                 viewer.setSceneData ( rootnode );
                 viewer.frame();
