@@ -19,8 +19,8 @@
 *  THE SOFTWARE.
 */
 
-#ifndef BASICEVENTHANDLER_H
-#define BASICEVENTHANDLER_H
+#ifndef TWEAKBARGUI_H
+#define TWEAKBARGUI_H
 
 #include <osgGA/GUIEventHandler>
 
@@ -31,20 +31,6 @@ class ExportState
 public:
         ExportState() : state ( false ) {};
 		bool state;
-};
-
-
-class BasicEventHandler : public osgGA::GUIEventHandler
-{
-public:
-        BasicEventHandler ( ExportState* s ) : export_state ( s ) {};
-        virtual bool handle ( const osgGA::GUIEventAdapter& ea,
-                              osgGA::GUIActionAdapter& );
-        virtual void accept ( osgGA::GUIEventHandlerVisitor& v ) {
-                v.visit ( *this );
-        };
-protected:
-        ExportState* export_state;
 };
 
 struct TweakBarEventCallback : public osgGA::GUIEventHandler
@@ -83,4 +69,4 @@ protected:
 		virtual ~TweakBarDrawable();
 };
 
-#endif // BASICEVENTHANDLER_H
+#endif // TWEAKBARGUI_H

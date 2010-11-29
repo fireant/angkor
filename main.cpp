@@ -60,7 +60,7 @@ void addToLightPointNode ( LightPointNode& lpn, unsigned int noSteps,
         for ( unsigned int i=0;i<noSteps;++i) {
                 LightPoint lp;
 				lp._color.set ( 1.0f,1.0f,1.0f,1.0f );
-                lp._position.z() = depth_data[j][i] * 10.0;
+                lp._position.z() = depth_data[j][i] * 14.0;
                 lp._position.y() = (j-120.0) * ( lp._position.z() + -10.0 )
 										* 0.005;
                 lp._position.x() = (i-160.0) * ( lp._position.z() + -10.0 )
@@ -194,8 +194,6 @@ int main ( int argc, char **argv )
                 return 1;
         }
         
-        cout<<">> Hit s to save the point cloud in kinect.ply <<"<<endl;
-
         pthread_create ( &freenect_thread, NULL, freenect_threadfunc, NULL );
 
         osgViewer::Viewer viewer;
@@ -206,11 +204,25 @@ int main ( int argc, char **argv )
 		viewer.getCameraManipulator()->setHomePosition(eye, center, up);
         viewer.setUpViewInWindow ( 640, 0, 640, 480 );
 		ExportState export_state;
-		BasicEventHandler* e_handler = new BasicEventHandler(&export_state);
+		TweakBarEventCallback* e_handler = new TweakBarEventCallback(&export_state);
 		viewer.addEventHandler(e_handler);
+		osgViewer::ViewerBase::Windows wins;
+		viewer.getWindows(wins);
+		wins[0]->setWindowName("Angkor");
+		viewer.setThreadingModel(osgViewer::Viewer::SingleThreaded);
         viewer.realize();
+
+		osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+		osg::ref_ptr<TweakBarDrawable> cd = new TweakBarDrawable();
+		geode->addDrawable(cd.get());
+		osg::StateSet* ss = geode->getOrCreateStateSet();
+		ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+		
+		osg::Camera* hudCam = cd->createHUD(wins[0]->getTraits()->width, wins[0]->getTraits()->height);
+		hudCam->addChild(geode);
 	
         osg::Group* rootnode = new osg::Group;
+		rootnode->addChild(hudCam);
 
         osg::Node* lps;
         lps = createLightPointsDatabase(&export_state);

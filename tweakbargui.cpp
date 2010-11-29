@@ -19,31 +19,11 @@
 *  THE SOFTWARE.
 */
 
-#include "basiceventhandler.h"
+#include "tweakbargui.h"
 
 #include <iostream>
 
-bool BasicEventHandler::handle ( const osgGA::GUIEventAdapter& ea,
-                                 osgGA::GUIActionAdapter& )
-{
-        switch ( ea.getEventType() ) {
-        case ( osgGA::GUIEventAdapter::KEYDOWN ) : {
-                switch ( ea.getKey() ) {
-                case 's':
-                        export_state->state = true;
-                        return false;
-                        break;
-                default:
-                        return false;
-                }
-        }
-        default:
-                return false;
-        }
-}
-
 void TW_CALL SavePLY(void* clientData) { ((ExportState *)clientData)->state = true;}
-
 
 TweakBarEventCallback::TweakBarEventCallback ( ExportState* s ) : export_state( s )
 {
@@ -119,27 +99,18 @@ void TweakBarDrawable::drawImplementation ( osg::RenderInfo& renderInfo ) const
 
 osg::Camera* TweakBarDrawable::createHUD ( int width, int height )
 {
-        // create a camera to set up the projection and model view matrices, and the subgraph to draw in the HUD
         osg::Camera* camera = new osg::Camera;
 
-        // set the projection matrix
         camera->setProjectionMatrix ( osg::Matrix::ortho2D ( 0,width,0,height ) );
 
-        // set the view matrix
         camera->setReferenceFrame ( osg::Transform::ABSOLUTE_RF );
         camera->setViewMatrix ( osg::Matrix::identity() );
 
-        // only clear the depth buffer
         camera->setClearMask ( GL_DEPTH_BUFFER_BIT );
 
-        // draw subgraph after main camera view.
-        // The bin order is set to an arbitrarily large number to ensure that
-        // there is no conflict with other post rendering activity (e.g., osgEarth)
         camera->setRenderOrder ( osg::Camera::POST_RENDER, 10000 );
 
-        // we don't want the camera to grab event focus from the viewers main camera(s).
         camera->setAllowEventFocus ( false );
 
         return camera;
-
 }
