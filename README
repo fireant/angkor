@@ -3,7 +3,7 @@ ABOUT
 =====
 The current version of the project can be used to convert the Kinect's
 disparity map to point cloud and visualize it using OpenSceneGraph. The point
-cloud can be saved as PLY file.
+cloud can be saved to an ASCII PLY file.
 
 
 TO COMPILE
