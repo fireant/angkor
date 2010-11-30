@@ -1,3 +1,20 @@
-This project uses openscenegraph to visualize the Kinect's depth map.
-To compile the code you need to have openscenegraph and libfreenect installed on
-your system.
+
+ABOUT
+=====
+The current version of the project can be used to convert the Kinect's
+disparity map to point cloud and visualize it using OpenSceneGraph. The point
+cloud can be saved as PLY file.
+
+
+TO COMPILE
+==========
+The requirements are:
+- openscenegraph
+- libfreenect 
+- AntTweakBar
+
+TODO
+====
+- binary PLY file format
+- add calibrating tools
+- merging point clouds
