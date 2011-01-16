@@ -35,7 +35,7 @@
 
 #include <libfreenect/libfreenect.h>
 
-#include "basiceventhandler.h"
+#include "tweakbargui.h"
 
 volatile int die = 0;
 pthread_t freenect_thread;
